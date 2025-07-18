@@ -17,12 +17,13 @@
     "package": "npm run build && electron-builder"
   },
   "build": {
-    "appId": "com.electron.interview-coder",
-    "productName": "Interview Coder",
+    "appId": "com.localai.desktop",
+    "productName": "Local AI Assistant",
     "files": [
       "dist/**/*",
       "dist-electron/**/*",
-      "package.json"
+      "package.json",
+      "backend/**/*"
     ],
     "directories": {
       "output": "release"
@@ -48,14 +49,7 @@
         "deb"
       ],
       "icon": "assets/icons/png/icon-256x256.png"
-    },
-    "publish": [
-      {
-        "provider": "github",
-        "owner": "ibttf",
-        "repo": "interview-coder-frontend"
-      }
-    ]
+    }
   },
   "keywords": [],
   "author": "",
