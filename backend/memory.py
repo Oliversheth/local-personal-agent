@@ -26,6 +26,10 @@ def embed_and_store(id: str, text: str, metadata: Optional[dict] = None) -> bool
     """
     Store text with embedding in the vector database
     """
+    if collection is None:
+        print("Warning: Collection not available, skipping storage")
+        return False
+    
     try:
         # Add timestamp to metadata
         if metadata is None:
@@ -46,6 +50,10 @@ def retrieve_context(query: str, n_results: int = 5) -> str:
     """
     Retrieve relevant context from memory based on query
     """
+    if collection is None:
+        print("Warning: Collection not available, returning empty context")
+        return ""
+    
     try:
         results = collection.query(
             query_texts=[query],
