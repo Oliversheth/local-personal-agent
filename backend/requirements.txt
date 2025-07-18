@@ -1,0 +1,10 @@
+fastapi==0.116.1
+uvicorn==0.35.0
+requests==2.32.4
+python-dotenv==1.1.1
+pyautogui==0.9.54
+pillow==11.3.0
+pytesseract==0.3.13
+pyperclip==1.9.0
+chromadb==1.0.15
+pydantic==2.11.7
