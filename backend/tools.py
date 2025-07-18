@@ -7,6 +7,11 @@ import io
 import os
 from typing import Tuple, Optional
 
+# Configure for headless environment
+import os
+if 'DISPLAY' not in os.environ:
+    os.environ['DISPLAY'] = ':0'
+
 # Configure pyautogui
 pyautogui.FAILSAFE = True
 pyautogui.PAUSE = 0.1
