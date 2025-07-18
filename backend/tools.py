@@ -1,23 +1,36 @@
-import pyautogui
-import pytesseract
-import pyperclip
-from PIL import Image
-import base64
-import io
 import os
 from typing import Tuple, Optional
+import base64
+import io
+from PIL import Image
+import pytesseract
 
-# Configure for headless environment
-import os
-if 'DISPLAY' not in os.environ:
-    os.environ['DISPLAY'] = ':0'
+# Handle headless environment
+HEADLESS_MODE = 'DISPLAY' not in os.environ
 
-# Configure pyautogui
-pyautogui.FAILSAFE = True
-pyautogui.PAUSE = 0.1
+if not HEADLESS_MODE:
+    try:
+        import pyautogui
+        import pyperclip
+        # Configure pyautogui
+        pyautogui.FAILSAFE = True
+        pyautogui.PAUSE = 0.1
+    except Exception as e:
+        print(f"Warning: GUI tools not available: {e}")
+        HEADLESS_MODE = True
+else:
+    print("Running in headless mode - GUI tools will be mocked")
 
 def screenshot() -> str:
     """Take a screenshot and return as base64 encoded string"""
+    if HEADLESS_MODE:
+        # Return a mock screenshot (1x1 black pixel)
+        img = Image.new('RGB', (1, 1), color='black')
+        buffer = io.BytesIO()
+        img.save(buffer, format='PNG')
+        img_str = base64.b64encode(buffer.getvalue()).decode()
+        return img_str
+    
     try:
         # Take screenshot
         screenshot_img = pyautogui.screenshot()
@@ -42,6 +55,8 @@ def ocr(image_data: str) -> str:
         text = pytesseract.image_to_string(img)
         return text.strip()
     except Exception as e:
+        if HEADLESS_MODE:
+            return f"OCR not available in headless mode: {str(e)}"
         raise Exception(f"OCR failed: {str(e)}")
 
 def ocr_from_file(file_path: str) -> str:
@@ -54,10 +69,16 @@ def ocr_from_file(file_path: str) -> str:
         text = pytesseract.image_to_string(img)
         return text.strip()
     except Exception as e:
+        if HEADLESS_MODE:
+            return f"OCR not available in headless mode: {str(e)}"
         raise Exception(f"OCR failed: {str(e)}")
 
 def click(x: int, y: int) -> bool:
     """Click at specified coordinates"""
+    if HEADLESS_MODE:
+        print(f"Mock click at ({x}, {y})")
+        return True
+    
     try:
         pyautogui.click(x, y)
         return True
@@ -66,6 +87,10 @@ def click(x: int, y: int) -> bool:
 
 def right_click(x: int, y: int) -> bool:
     """Right click at specified coordinates"""
+    if HEADLESS_MODE:
+        print(f"Mock right click at ({x}, {y})")
+        return True
+    
     try:
         pyautogui.rightClick(x, y)
         return True
@@ -74,6 +99,10 @@ def right_click(x: int, y: int) -> bool:
 
 def double_click(x: int, y: int) -> bool:
     """Double click at specified coordinates"""
+    if HEADLESS_MODE:
+        print(f"Mock double click at ({x}, {y})")
+        return True
+    
     try:
         pyautogui.doubleClick(x, y)
         return True
@@ -82,6 +111,10 @@ def double_click(x: int, y: int) -> bool:
 
 def drag(start_x: int, start_y: int, end_x: int, end_y: int, duration: float = 0.5) -> bool:
     """Drag from start coordinates to end coordinates"""
+    if HEADLESS_MODE:
+        print(f"Mock drag from ({start_x}, {start_y}) to ({end_x}, {end_y})")
+        return True
+    
     try:
         pyautogui.drag(end_x - start_x, end_y - start_y, duration=duration, button='left')
         return True
@@ -90,6 +123,10 @@ def drag(start_x: int, start_y: int, end_x: int, end_y: int, duration: float = 0
 
 def type_text(text: str) -> bool:
     """Type text at current cursor position"""
+    if HEADLESS_MODE:
+        print(f"Mock type: {text}")
+        return True
+    
     try:
         pyautogui.typewrite(text)
         return True
@@ -98,6 +135,10 @@ def type_text(text: str) -> bool:
 
 def press_key(key: str) -> bool:
     """Press a single key"""
+    if HEADLESS_MODE:
+        print(f"Mock press key: {key}")
+        return True
+    
     try:
         pyautogui.press(key)
         return True
@@ -106,6 +147,10 @@ def press_key(key: str) -> bool:
 
 def key_combination(keys: list) -> bool:
     """Press a combination of keys"""
+    if HEADLESS_MODE:
+        print(f"Mock key combination: {'+'.join(keys)}")
+        return True
+    
     try:
         pyautogui.hotkey(*keys)
         return True
@@ -114,6 +159,10 @@ def key_combination(keys: list) -> bool:
 
 def scroll(clicks: int, x: Optional[int] = None, y: Optional[int] = None) -> bool:
     """Scroll at specified position (or current mouse position)"""
+    if HEADLESS_MODE:
+        print(f"Mock scroll: {clicks} clicks at ({x}, {y})")
+        return True
+    
     try:
         if x is not None and y is not None:
             pyautogui.scroll(clicks, x=x, y=y)
@@ -125,6 +174,9 @@ def scroll(clicks: int, x: Optional[int] = None, y: Optional[int] = None) -> boo
 
 def read_clipboard() -> str:
     """Read text from clipboard"""
+    if HEADLESS_MODE:
+        return "Mock clipboard content"
+    
     try:
         return pyperclip.paste()
     except Exception as e:
@@ -132,6 +184,10 @@ def read_clipboard() -> str:
 
 def write_clipboard(text: str) -> bool:
     """Write text to clipboard"""
+    if HEADLESS_MODE:
+        print(f"Mock write to clipboard: {text}")
+        return True
+    
     try:
         pyperclip.copy(text)
         return True
@@ -140,6 +196,9 @@ def write_clipboard(text: str) -> bool:
 
 def get_screen_size() -> Tuple[int, int]:
     """Get screen dimensions"""
+    if HEADLESS_MODE:
+        return (1920, 1080)  # Mock screen size
+    
     try:
         return pyautogui.size()
     except Exception as e:
@@ -147,6 +206,9 @@ def get_screen_size() -> Tuple[int, int]:
 
 def get_mouse_position() -> Tuple[int, int]:
     """Get current mouse position"""
+    if HEADLESS_MODE:
+        return (960, 540)  # Mock mouse position
+    
     try:
         return pyautogui.position()
     except Exception as e:
@@ -154,6 +216,10 @@ def get_mouse_position() -> Tuple[int, int]:
 
 def move_mouse(x: int, y: int, duration: float = 0.0) -> bool:
     """Move mouse to specified coordinates"""
+    if HEADLESS_MODE:
+        print(f"Mock move mouse to ({x}, {y})")
+        return True
+    
     try:
         pyautogui.moveTo(x, y, duration=duration)
         return True
@@ -162,6 +228,10 @@ def move_mouse(x: int, y: int, duration: float = 0.0) -> bool:
 
 def find_on_screen(image_path: str, confidence: float = 0.8) -> Optional[Tuple[int, int]]:
     """Find an image on screen and return its center coordinates"""
+    if HEADLESS_MODE:
+        print(f"Mock find on screen: {image_path}")
+        return None
+    
     try:
         if not os.path.exists(image_path):
             raise Exception(f"Image file not found: {image_path}")
@@ -176,6 +246,10 @@ def find_on_screen(image_path: str, confidence: float = 0.8) -> Optional[Tuple[i
 
 def wait_for_image(image_path: str, timeout: int = 10, confidence: float = 0.8) -> Optional[Tuple[int, int]]:
     """Wait for an image to appear on screen"""
+    if HEADLESS_MODE:
+        print(f"Mock wait for image: {image_path}")
+        return None
+    
     import time
     
     start_time = time.time()
