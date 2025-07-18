@@ -9,11 +9,18 @@ from datetime import datetime
 client = Client()
 
 # Create or get collection
+collection = None
 try:
     collection = client.get_collection("memory")
-except ValueError:
-    # Collection doesn't exist, create it
-    collection = client.create_collection("memory")
+    print("Existing memory collection found")
+except:
+    try:
+        collection = client.create_collection("memory")
+        print("Created new memory collection")
+    except Exception as e:
+        print(f"Failed to create collection: {e}")
+        # Create a fallback client
+        collection = None
 
 def embed_and_store(id: str, text: str, metadata: Optional[dict] = None) -> bool:
     """
