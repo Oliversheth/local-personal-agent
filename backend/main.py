@@ -16,6 +16,10 @@ app = FastAPI(title="Local AI Assistant API", version="1.0.0")
 from screenshot_queue import router as screenshot_router
 app.include_router(screenshot_router, prefix="/api/screenshot", tags=["screenshots"])
 
+# Include tools router
+from tools_router import router as tools_router
+app.include_router(tools_router, prefix="/api/tools", tags=["tools"])
+
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
