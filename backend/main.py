@@ -12,6 +12,10 @@ load_dotenv()
 
 app = FastAPI(title="Local AI Assistant API", version="1.0.0")
 
+# Include screenshot queue router
+from screenshot_queue import router as screenshot_router
+app.include_router(screenshot_router, prefix="/api/screenshot", tags=["screenshots"])
+
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
