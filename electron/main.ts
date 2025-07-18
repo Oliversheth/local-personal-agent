@@ -11,7 +11,7 @@ export class AppState {
   private windowHelper: WindowHelper
   private screenshotHelper: ScreenshotHelper
   public shortcutsHelper: ShortcutsHelper
-  public processingHelper: ProcessingHelper
+  public processingHelper: LocalProcessingHelper
 
   // View management
   private view: "queue" | "solutions" = "queue"
