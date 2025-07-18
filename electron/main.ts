@@ -52,7 +52,7 @@ export class AppState {
     this.screenshotHelper = new ScreenshotHelper(this.view)
 
     // Initialize ProcessingHelper
-    this.processingHelper = new ProcessingHelper(this)
+    this.processingHelper = new LocalProcessingHelper(this)
 
     // Initialize ShortcutsHelper
     this.shortcutsHelper = new ShortcutsHelper(this)
