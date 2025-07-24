@@ -19,6 +19,77 @@ from datetime import datetime
 
 app = FastAPI(title="Autonomous AI Agent System", version="2.0.0")
 
+# Enhanced tools router integration
+from screenshot_queue import router as screenshot_router
+app.include_router(screenshot_router, prefix="/api/screenshot", tags=["screenshots"])
+
+from tools_router import router as tools_router  
+app.include_router(tools_router, prefix="/api/tools", tags=["tools"])
+
+# Enterprise tools integration
+from fastapi import APIRouter
+enterprise_router = APIRouter()
+
+@enterprise_router.post("/write-file")
+async def write_file_endpoint(file_path: str, content: str):
+    return enterprise_tools.write_file(file_path, content)
+
+@enterprise_router.post("/run-shell")
+async def run_shell_endpoint(command: str, cwd: str = None):
+    return enterprise_tools.run_shell(command, cwd)
+
+@enterprise_router.post("/git-init")
+async def git_init_endpoint(remote_url: str = None):
+    return enterprise_tools.git_init(remote_url)
+
+@enterprise_router.post("/git-commit")
+async def git_commit_endpoint(message: str):
+    return enterprise_tools.git_commit(message)
+
+@enterprise_router.post("/create-project")
+async def create_project_endpoint(project_name: str, project_type: str = "fullstack"):
+    return enterprise_tools.create_project(project_name, project_type)
+
+@enterprise_router.post("/install-deps")
+async def install_deps_endpoint(language: str, packages: List[str]):
+    return enterprise_tools.install_dependencies(language, packages)
+
+@enterprise_router.post("/docker-build")
+async def docker_build_endpoint(image_name: str):
+    return enterprise_tools.docker_build(image_name)
+
+@enterprise_router.post("/deploy-local")
+async def deploy_local_endpoint(deployment_type: str = "docker-compose"):
+    return enterprise_tools.deploy_local(deployment_type)
+
+app.include_router(enterprise_router, prefix="/api/enterprise", tags=["enterprise"])
+
+# Quantitative trading endpoints
+quant_router = APIRouter()
+
+@quant_router.post("/backtest")
+async def run_backtest(strategy_name: str, symbol: str, start_date: str, end_date: str):
+    start_dt = datetime.fromisoformat(start_date)
+    end_dt = datetime.fromisoformat(end_date)
+    return quant_system.run_strategy_backtest(strategy_name, symbol, start_dt, end_dt)
+
+@quant_router.post("/optimize")
+async def optimize_strategy_endpoint(strategy_name: str, symbol: str, start_date: str, 
+                                   end_date: str, param_ranges: Dict[str, List]):
+    start_dt = datetime.fromisoformat(start_date)
+    end_dt = datetime.fromisoformat(end_date)
+    return quant_system.optimize_strategy(strategy_name, symbol, start_dt, end_dt, param_ranges)
+
+@quant_router.get("/strategies")
+async def list_strategies():
+    return {"strategies": quant_system.get_strategy_list()}
+
+@quant_router.get("/results")
+async def get_results_history():
+    return {"results": quant_system.get_results_history()}
+
+app.include_router(quant_router, prefix="/api/quant", tags=["quantitative"])
+
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
