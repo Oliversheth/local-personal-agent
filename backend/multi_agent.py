@@ -375,9 +375,77 @@ Implement this task with code and configurations:"""
 
     async def _execute_tool_calls(self, response: str, task: Task) -> List[Dict[str, Any]]:
         """Execute any tool calls found in the response"""
-        # This will be implemented with the tools integration
-        # For now, return empty list
-        return []
+        tool_results = []
+        
+        # Import tool systems
+        from enterprise_tools import EnterpriseTools
+        from context_agent import context_agent
+        
+        enterprise_tools = EnterpriseTools()
+        
+        # Look for tool calls in response
+        import re
+        
+        # Pattern to match tool calls like: TOOL_CALL:function_name(param1, param2)
+        tool_pattern = r'TOOL_CALL:(\w+)\((.*?)\)'
+        tool_matches = re.findall(tool_pattern, response)
+        
+        for function_name, params_str in tool_matches:
+            try:
+                # Parse parameters
+                params = self._parse_tool_params(params_str)
+                
+                # Execute the tool call
+                if hasattr(enterprise_tools, function_name):
+                    tool_func = getattr(enterprise_tools, function_name)
+                    result = tool_func(**params)
+                    
+                    # Record the tool execution in context
+                    context_agent.record_command_execution(
+                        command=f"{function_name}({params_str})",
+                        exit_code=0 if result.get('success', False) else 1,
+                        stdout=str(result.get('output', '')),
+                        stderr=str(result.get('error', '')),
+                        duration=0.1,  # Estimated
+                        working_directory=str(enterprise_tools.workspace_dir)
+                    )
+                    
+                    tool_results.append({
+                        "function": function_name,
+                        "params": params,
+                        "result": result,
+                        "success": result.get('success', False)
+                    })
+                
+            except Exception as e:
+                tool_results.append({
+                    "function": function_name,
+                    "params": params_str,
+                    "error": str(e),
+                    "success": False
+                })
+        
+        return tool_results
+
+    def _parse_tool_params(self, params_str: str) -> Dict[str, Any]:
+        """Parse tool parameters from string"""
+        params = {}
+        if not params_str.strip():
+            return params
+        
+        try:
+            # Simple parameter parsing - in production, use proper parser
+            parts = params_str.split(',')
+            for part in parts:
+                if '=' in part:
+                    key, value = part.split('=', 1)
+                    key = key.strip().strip('"\'')
+                    value = value.strip().strip('"\'')
+                    params[key] = value
+        except Exception as e:
+            print(f"Error parsing tool params: {e}")
+        
+        return params
 
     async def _attempt_recovery(self, task: Task, error: Exception) -> Optional[Dict[str, Any]]:
         """Attempt to recover from task failure"""
