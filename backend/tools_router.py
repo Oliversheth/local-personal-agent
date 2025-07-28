@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional, Tuple
 import json
+import base64
 
 from tools import (
     screenshot, ocr, ocr_from_file, click, right_click, double_click, drag,
@@ -9,6 +10,8 @@ from tools import (
     get_screen_size, get_mouse_position, move_mouse, find_on_screen, wait_for_image,
     write_file, make_dir, run_shell, open_app, list_dir
 )
+
+from vision import web_screenshot, browser_ocr, click_element
 
 router = APIRouter()
 
@@ -70,6 +73,15 @@ class RunShellRequest(BaseModel):
 class OpenAppRequest(BaseModel):
     app_name: str
     args: List[str] = []
+
+class WebScreenshotRequest(BaseModel):
+    url: str
+
+class BrowserOCRRequest(BaseModel):
+    input: str  # URL or file path
+
+class ClickElementRequest(BaseModel):
+    selector: str
 
 @router.post("/screenshot")
 async def take_screenshot_tool():
@@ -290,6 +302,46 @@ async def list_dir_tool(path: str):
         result = list_dir(path)
         if not result["success"]:
             raise HTTPException(status_code=500, detail=result["error"])
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Vision & Browser Interaction Tools
+
+@router.post("/web-screenshot")
+async def web_screenshot_tool(request: WebScreenshotRequest):
+    """Take a screenshot of a web page and return as base64 encoded image"""
+    try:
+        screenshot_bytes = await web_screenshot(request.url)
+        # Convert bytes to base64 for JSON response
+        img_data = base64.b64encode(screenshot_bytes).decode('utf-8')
+        return {
+            "success": True,
+            "image_data": img_data,
+            "url": request.url,
+            "format": "png"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/browser-ocr")
+async def browser_ocr_tool(request: BrowserOCRRequest):
+    """Perform OCR on a URL (screenshot first) or image file"""
+    try:
+        text = browser_ocr(request.input)
+        return {
+            "success": True,
+            "text": text,
+            "input": request.input
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/element-click")
+async def element_click_tool(request: ClickElementRequest):
+    """Click an element using CSS selector via browser automation"""
+    try:
+        result = await click_element(request.selector)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
