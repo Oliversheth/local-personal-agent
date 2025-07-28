@@ -386,7 +386,7 @@ Implement this task with code and configurations:"""
         # Look for tool calls in response
         import re
         
-        # Pattern to match tool calls like: TOOL_CALL:function_name(param1, param2)
+        # Pattern to match old-style tool calls like: TOOL_CALL:function_name(param1, param2)
         tool_pattern = r'TOOL_CALL:(\w+)\((.*?)\)'
         tool_matches = re.findall(tool_pattern, response)
         
@@ -425,7 +425,77 @@ Implement this task with code and configurations:"""
                     "success": False
                 })
         
+        # Look for new-style JSON tool calls like: {"tool": "write_file", "args": {"path": "...", "content": "..."}}
+        json_tool_pattern = r'\{"tool":\s*"([^"]+)",\s*"args":\s*(\{[^}]*\})\}'
+        json_tool_matches = re.findall(json_tool_pattern, response)
+        
+        for tool_name, args_str in json_tool_matches:
+            try:
+                # Parse JSON arguments
+                args = json.loads(args_str)
+                
+                # Execute the tool call via HTTP endpoint
+                result = await self._call_tool_endpoint(tool_name, args)
+                
+                tool_results.append({
+                    "tool": tool_name,
+                    "args": args,
+                    "result": result,
+                    "success": result.get('success', False)
+                })
+                
+            except Exception as e:
+                tool_results.append({
+                    "tool": tool_name,
+                    "args": args_str,
+                    "error": str(e),
+                    "success": False
+                })
+        
         return tool_results
+
+    async def _call_tool_endpoint(self, tool_name: str, args: Dict[str, Any]) -> Dict[str, Any]:
+        """Call the appropriate v1/tools endpoint for the given tool"""
+        try:
+            # Map tool names to endpoint paths and HTTP methods
+            tool_endpoints = {
+                "write_file": ("POST", "/v1/tools/write-file"),
+                "make_dir": ("POST", "/v1/tools/make-dir"), 
+                "run_shell": ("POST", "/v1/tools/run-shell"),
+                "open_app": ("POST", "/v1/tools/open-app"),
+                "list_dir": ("GET", "/v1/tools/list-dir")
+            }
+            
+            if tool_name not in tool_endpoints:
+                return {
+                    "success": False,
+                    "error": f"Unknown tool: {tool_name}"
+                }
+            
+            method, endpoint = tool_endpoints[tool_name]
+            base_url = "http://127.0.0.1:8001"  # FastAPI server
+            
+            if method == "GET" and tool_name == "list_dir":
+                # Handle list_dir as GET with query parameter
+                path = args.get("path", "")
+                response = requests.get(f"{base_url}{endpoint}?path={path}", timeout=30)
+            else:
+                # Handle POST requests with JSON body
+                response = requests.post(f"{base_url}{endpoint}", json=args, timeout=30)
+            
+            if response.status_code == 200:
+                return response.json()
+            else:
+                return {
+                    "success": False,
+                    "error": f"HTTP {response.status_code}: {response.text}"
+                }
+                
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e)
+            }
 
     def _parse_tool_params(self, params_str: str) -> Dict[str, Any]:
         """Parse tool parameters from string"""
