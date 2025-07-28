@@ -1,5 +1,6 @@
 import os
-from typing import Tuple, Optional
+import subprocess
+from typing import Tuple, Optional, Dict, Any
 import base64
 import io
 from PIL import Image
@@ -263,3 +264,163 @@ def wait_for_image(image_path: str, timeout: int = 10, confidence: float = 0.8) 
             time.sleep(0.5)
     
     return None
+
+def write_file(path: str, content: str) -> Dict[str, Any]:
+    """Write content to a file"""
+    try:
+        # Create directory if it doesn't exist
+        directory = os.path.dirname(path)
+        if directory and not os.path.exists(directory):
+            os.makedirs(directory, exist_ok=True)
+        
+        with open(path, 'w', encoding='utf-8') as f:
+            f.write(content)
+        
+        return {
+            "success": True,
+            "message": f"File written successfully: {path}",
+            "path": path,
+            "size": len(content)
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "message": f"Failed to write file: {path}"
+        }
+
+def make_dir(path: str) -> Dict[str, Any]:
+    """Create a directory"""
+    try:
+        os.makedirs(path, exist_ok=True)
+        return {
+            "success": True,
+            "message": f"Directory created successfully: {path}",
+            "path": path
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "message": f"Failed to create directory: {path}"
+        }
+
+def run_shell(command: str) -> Dict[str, Any]:
+    """Execute a shell command"""
+    try:
+        # Run the command and capture output
+        result = subprocess.run(
+            command,
+            shell=True,
+            capture_output=True,
+            text=True,
+            timeout=30  # 30 second timeout
+        )
+        
+        return {
+            "success": result.returncode == 0,
+            "return_code": result.returncode,
+            "stdout": result.stdout,
+            "stderr": result.stderr,
+            "command": command
+        }
+    except subprocess.TimeoutExpired:
+        return {
+            "success": False,
+            "error": "Command timed out after 30 seconds",
+            "command": command
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "command": command
+        }
+
+def open_app(app_name: str, args: list[str]) -> Dict[str, Any]:
+    """Open an application with arguments"""
+    try:
+        # Build the command
+        command = [app_name] + args
+        
+        # Start the process without waiting for it to finish
+        process = subprocess.Popen(
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+        
+        return {
+            "success": True,
+            "message": f"Application started successfully: {app_name}",
+            "app_name": app_name,
+            "args": args,
+            "pid": process.pid
+        }
+    except FileNotFoundError:
+        return {
+            "success": False,
+            "error": f"Application not found: {app_name}",
+            "app_name": app_name
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "app_name": app_name
+        }
+
+def list_dir(path: str) -> Dict[str, Any]:
+    """List contents of a directory"""
+    try:
+        if not os.path.exists(path):
+            return {
+                "success": False,
+                "error": f"Path does not exist: {path}",
+                "path": path
+            }
+        
+        if not os.path.isdir(path):
+            return {
+                "success": False,
+                "error": f"Path is not a directory: {path}",
+                "path": path
+            }
+        
+        # Get directory contents
+        items = []
+        for item in os.listdir(path):
+            item_path = os.path.join(path, item)
+            is_dir = os.path.isdir(item_path)
+            
+            try:
+                stat_info = os.stat(item_path)
+                size = stat_info.st_size if not is_dir else None
+                modified = stat_info.st_mtime
+            except:
+                size = None
+                modified = None
+            
+            items.append({
+                "name": item,
+                "type": "directory" if is_dir else "file",
+                "size": size,
+                "modified": modified
+            })
+        
+        # Sort items: directories first, then files, both alphabetically
+        items.sort(key=lambda x: (x["type"] != "directory", x["name"].lower()))
+        
+        return {
+            "success": True,
+            "path": path,
+            "items": items,
+            "count": len(items)
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "path": path
+        }

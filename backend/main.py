@@ -24,7 +24,7 @@ from screenshot_queue import router as screenshot_router
 app.include_router(screenshot_router, prefix="/api/screenshot", tags=["screenshots"])
 
 from tools_router import router as tools_router  
-app.include_router(tools_router, prefix="/api/tools", tags=["tools"])
+app.include_router(tools_router, prefix="/v1/tools", tags=["tools"])
 
 # Enterprise tools integration
 from fastapi import APIRouter
@@ -114,7 +114,14 @@ AVAILABLE AGENTS:
 - Context Agent: Maintains memory and system awareness
 
 AVAILABLE TOOLS:
-1. Enterprise Development:
+1. File I/O & System Tools (Use JSON format: {"tool": "tool_name", "args": {...}}):
+   - write_file: {"tool": "write_file", "args": {"path": "file.txt", "content": "..."}}
+   - make_dir: {"tool": "make_dir", "args": {"path": "/path/to/dir"}}
+   - run_shell: {"tool": "run_shell", "args": {"command": "ls -la"}}
+   - open_app: {"tool": "open_app", "args": {"app_name": "notepad", "args": ["file.txt"]}}
+   - list_dir: {"tool": "list_dir", "args": {"path": "/path/to/directory"}}
+
+2. Enterprise Development:
    - write_file(path, content): Create/modify files
    - run_shell(command): Execute shell commands
    - git_init/commit/push: Git operations
@@ -123,20 +130,20 @@ AVAILABLE TOOLS:
    - create_project(name, type): Scaffold projects
    - deploy_local(type): Local deployment
 
-2. System Automation:
+3. System Automation:
    - screenshot(): Capture screen
    - ocr(image): Extract text from images
    - click(x, y): Mouse operations
    - type(text): Keyboard input
    - read/write_clipboard(): Clipboard operations
 
-3. Quantitative Trading:
+4. Quantitative Trading:
    - backtest_strategy(strategy, params): Run strategy backtests
    - optimize_strategy(strategy, ranges): Parameter optimization
    - generate_market_data(symbol, dates): Create test data
    - risk_analysis(portfolio, limits): Risk assessment
 
-4. Memory & Context:
+5. Memory & Context:
    - store_context(id, content): Store information
    - retrieve_context(query): Get relevant context
    - update_memory(session_data): Update knowledge base

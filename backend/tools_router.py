@@ -6,7 +6,8 @@ import json
 from tools import (
     screenshot, ocr, ocr_from_file, click, right_click, double_click, drag,
     type_text, press_key, key_combination, scroll, read_clipboard, write_clipboard,
-    get_screen_size, get_mouse_position, move_mouse, find_on_screen, wait_for_image
+    get_screen_size, get_mouse_position, move_mouse, find_on_screen, wait_for_image,
+    write_file, make_dir, run_shell, open_app, list_dir
 )
 
 router = APIRouter()
@@ -55,6 +56,20 @@ class WaitForImageRequest(BaseModel):
     image_path: str
     timeout: int = 10
     confidence: float = 0.8
+
+class WriteFileRequest(BaseModel):
+    path: str
+    content: str
+
+class MakeDirRequest(BaseModel):
+    path: str
+
+class RunShellRequest(BaseModel):
+    command: str
+
+class OpenAppRequest(BaseModel):
+    app_name: str
+    args: List[str] = []
 
 @router.post("/screenshot")
 async def take_screenshot_tool():
@@ -221,5 +236,60 @@ async def wait_for_image_tool(request: WaitForImageRequest):
             return {"success": True, "found": True, "x": position[0], "y": position[1]}
         else:
             return {"success": True, "found": False, "message": "Image not found within timeout"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# New "Hands" & File I/O Tools endpoints
+
+@router.post("/write-file")
+async def write_file_tool(request: WriteFileRequest):
+    """Write content to a file"""
+    try:
+        result = write_file(request.path, request.content)
+        if not result["success"]:
+            raise HTTPException(status_code=500, detail=result["error"])
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/make-dir")
+async def make_dir_tool(request: MakeDirRequest):
+    """Create a directory"""
+    try:
+        result = make_dir(request.path)
+        if not result["success"]:
+            raise HTTPException(status_code=500, detail=result["error"])
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/run-shell")
+async def run_shell_tool(request: RunShellRequest):
+    """Execute a shell command"""
+    try:
+        result = run_shell(request.command)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/open-app")
+async def open_app_tool(request: OpenAppRequest):
+    """Open an application with arguments"""
+    try:
+        result = open_app(request.app_name, request.args)
+        if not result["success"]:
+            raise HTTPException(status_code=500, detail=result["error"])
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/list-dir")
+async def list_dir_tool(path: str):
+    """List contents of a directory"""
+    try:
+        result = list_dir(path)
+        if not result["success"]:
+            raise HTTPException(status_code=500, detail=result["error"])
+        return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
